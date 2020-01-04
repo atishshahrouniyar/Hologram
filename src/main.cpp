@@ -4,6 +4,9 @@
 #include <iostream>
 #include<string>
 #include<fstream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 
@@ -16,6 +19,11 @@ const unsigned int SCR_HEIGHT = 600;
 
 int main()
 {
+
+	//glm practise
+	glm::mat4 trans = glm::mat4(1.0f);
+	
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -207,6 +215,9 @@ int main()
 	glUniform1i(glGetUniformLocation(shaderProgram, "texture1"), 0);
 	glUniform1i(glGetUniformLocation(shaderProgram, "texture2"),1);
 
+	trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+
+	
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -229,7 +240,9 @@ int main()
 		// render the triangle
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,0);
-		
+		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+		unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
