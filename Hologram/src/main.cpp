@@ -32,7 +32,7 @@ glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 // lighting
-glm::vec3 lightPos(0.0f, 0.0f, 2.0f);
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 int main()
 {
@@ -159,6 +159,13 @@ int main()
 	unsigned int texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// load image, create texture and generate mipmaps
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load("textures/container2.png", &width, &height, &nrChannels, 0);
 	if (data)
@@ -173,7 +180,9 @@ int main()
 	stbi_image_free(data);
 	glEnable(GL_DEPTH_TEST);
 	//light position
-	
+	glUseProgram(lightShaderProgram);
+	glUniform1i(glGetUniformLocation(lightShaderProgram, "material.diffuse"), 0);
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -191,24 +200,16 @@ int main()
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-
+		
 		glUseProgram(lightShaderProgram);
-		glUniform1i(glGetUniformLocation(lightShaderProgram, "material.diffuse"), 0);
+		//glUniform1i(glGetUniformLocation(lightShaderProgram, "material.diffuse"), 0);
 		glUniform3f(glGetUniformLocation(lightShaderProgram, "material.specular"), 0.5f, 0.5f, 0.5f);
 		glUniform1f(glGetUniformLocation(lightShaderProgram, "material.shininess"), 32.0f);
 
-		glm::vec3 lightColor;
-		lightColor.x = sin(glfwGetTime() * 2.0f);
-		lightColor.y = sin(glfwGetTime() * 0.7f);
-		lightColor.z = sin(glfwGetTime() * 1.3f);
-
-		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f); // decrease the influence
-		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
-
-		glUniform3fv(glGetUniformLocation(lightShaderProgram, "light.ambient"),1, &diffuseColor[0]);
-		glUniform3fv(glGetUniformLocation(lightShaderProgram, "light.diffuse"),1, &ambientColor[0]);
+	
+		
+		glUniform3f(glGetUniformLocation(lightShaderProgram, "light.ambient"), 0.2f, 0.2f, 0.2f);
+		glUniform3f(glGetUniformLocation(lightShaderProgram, "light.diffuse"), 0.5f, 0.5f, 0.5f);
 
 		glUniform3f(glGetUniformLocation(lightShaderProgram, "light.specular"), 1.0f, 1.0f, 1.0f);
 		glUniform3fv(glGetUniformLocation(lightShaderProgram, "light.position"), 1, &lightPos[0]);
@@ -228,6 +229,8 @@ int main()
 		glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		int projectionLoc = glGetUniformLocation(lightShaderProgram, "projection");
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
 
 		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
