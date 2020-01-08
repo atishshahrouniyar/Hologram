@@ -125,6 +125,18 @@ int main()
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
 	
+	glm::vec3 cubePositions[] = {
+  glm::vec3(0.0f,  0.0f,  0.0f),
+  glm::vec3(2.0f,  5.0f, -15.0f),
+  glm::vec3(-1.5f, -2.2f, -2.5f),
+  glm::vec3(-3.8f, -2.0f, -12.3f),
+  glm::vec3(2.4f, -0.4f, -3.5f),
+  glm::vec3(-1.7f,  3.0f, -7.5f),
+  glm::vec3(1.3f, -2.0f, -2.5f),
+  glm::vec3(1.5f,  2.0f, -2.5f),
+  glm::vec3(1.5f,  0.2f, -1.5f),
+  glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
 	unsigned int VBO, cubeVAO;
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
@@ -179,11 +191,34 @@ int main()
 		std::cout << "Failed to load texture." << std::endl;
 	}
 	stbi_image_free(data);
+
+	unsigned int specularMap;
+	glGenTextures(1, &specularMap);
+	glBindTexture(GL_TEXTURE_2D, specularMap);
+	// set the texture wrapping parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// set texture filtering parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// load image, create texture and generate mipmaps
+	unsigned char *data1 = stbi_load("textures/container2_specular.png", &width, &height, &nrChannels, 0);
+	if (data1)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data1);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	}
+	else
+	{
+		std::cout << "Failed to load texture." << std::endl;
+	}
+	stbi_image_free(data1);
 	glEnable(GL_DEPTH_TEST);
 	//light position
 	glUseProgram(lightShaderProgram);
 	glUniform1i(glGetUniformLocation(lightShaderProgram, "material.diffuse"), 0);
-
+	glUniform1i(glGetUniformLocation(lightShaderProgram, "material.specular"), 0);
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -203,8 +238,6 @@ int main()
 
 		
 		glUseProgram(lightShaderProgram);
-		//glUniform1i(glGetUniformLocation(lightShaderProgram, "material.diffuse"), 0);
-		glUniform3f(glGetUniformLocation(lightShaderProgram, "material.specular"), 0.5f, 0.5f, 0.5f);
 		glUniform1f(glGetUniformLocation(lightShaderProgram, "material.shininess"), 32.0f);
 
 	
@@ -213,13 +246,10 @@ int main()
 		glUniform3f(glGetUniformLocation(lightShaderProgram, "light.diffuse"), 0.5f, 0.5f, 0.5f);
 
 		glUniform3f(glGetUniformLocation(lightShaderProgram, "light.specular"), 1.0f, 1.0f, 1.0f);
-		glUniform3fv(glGetUniformLocation(lightShaderProgram, "light.position"), 1, &lightPos[0]);
+		glUniform3f(glGetUniformLocation(lightShaderProgram, "light.direction"), -0.2f, -1.0f, -0.3f);
 		glUniform3fv(glGetUniformLocation(lightShaderProgram, "viewPos"), 1, &cameraPos[0]);
 
-		glm::mat4 model = glm::mat4(1.0f);
-		int modelLoc = glGetUniformLocation(lightShaderProgram, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
+		
 
 		glm::mat4 view= glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 		int viewLoc = glGetUniformLocation(lightShaderProgram, "view");
@@ -233,8 +263,20 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularMap);
+
 		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			int modelLoc = glGetUniformLocation(lightShaderProgram, "model");
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 
 		glUseProgram(lampShaderProgram);
@@ -242,10 +284,10 @@ int main()
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 		 viewLoc = glGetUniformLocation(lampShaderProgram, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		model = glm::mat4(1.0f);
+		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-		 modelLoc = glGetUniformLocation(lampShaderProgram, "model");
+		 int modelLoc = glGetUniformLocation(lampShaderProgram, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
 		
