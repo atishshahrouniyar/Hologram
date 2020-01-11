@@ -11,7 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <shader.h>
 #include <camera.h>
-
+#include <vector>
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -33,6 +33,42 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+struct Vertex {
+	glm::vec3 Position;
+	glm::vec3 Normal;
+	glm::vec2 TexCoords;
+};
+
+struct Texture {
+	unsigned int id;
+	std::string type;
+};
+
+class Mesh {
+public:
+	/*  Mesh Data  */
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	std::vector<Texture> textures;
+	/*  Functions  */
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+	void Draw(int shader);
+private:
+	/*  Render data  */
+	unsigned int VAO, VBO, EBO;
+	/*  Functions    */
+	void setupMesh();
+};
+
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures)
+{
+	this->vertices = vertices;
+	this->indices = indices;
+	this->textures = textures;
+
+	setupMesh();
+}
 
 int main()
 {
