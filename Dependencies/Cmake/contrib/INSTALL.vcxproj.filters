@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Desktop\labs\Hologram\Hologram\Dependencies\Cmake\CMakeFiles\226a16533ab7ed1d2fd58bb7eec4df79\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{B2D53D4E-B489-344D-B968-1D2AE0A75B64}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
