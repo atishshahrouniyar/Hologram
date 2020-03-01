@@ -33,7 +33,7 @@ float lastFrame = 0.0f; // Time of last frame
 
 
 //camera practise
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraPos = glm::vec3(10.0f, 5.0f, 10.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -307,7 +307,9 @@ int main()
 	}
 
 	int ourShader = gen_shader("shaders/model_loading.fs.txt", "shaders/model_loading.vs.txt");
-	Model ourModel("nanosuit/nanosuit.obj");
+	Model MainHouse("house/aatish3.obj");
+	Model box("cube/cube.obj");
+	Model SecondHouse("cottage/cottage_FREE.obj");
 
 	//Frame buffer
 	unsigned int fbo;
@@ -316,6 +318,8 @@ int main()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -329,7 +333,7 @@ int main()
 
 		// render
 		// ------
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(0.4f, 0.2f, 0.8f, 1.0f);
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -345,14 +349,32 @@ int main()
 		int viewLoc = glGetUniformLocation(ourShader, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-		int modelLoc = glGetUniformLocation(ourShader, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
+			model = glm::scale(model, glm::vec3(200, 1, 200)); // a smaller cube
+			int modelLoc = glGetUniformLocation(ourShader, "model");
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			box.Draw(ourShader);
+		}
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0.0f, 0.55f, 0.0f));
+			model = glm::scale(model, glm::vec3(0.06f)); // a smaller cube
+			int modelLoc = glGetUniformLocation(ourShader, "model");
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			MainHouse.Draw(ourShader);
+		}
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(10.0f, 0.55f, -9.5f));
+			model = glm::scale(model, glm::vec3(1.5f)); // a smaller cube
+			int modelLoc = glGetUniformLocation(ourShader, "model");
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			
+			SecondHouse.Draw(ourShader);
+		}
 		
-		ourModel.Draw(ourShader);
-
 		//}
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
