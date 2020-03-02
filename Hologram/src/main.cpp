@@ -305,12 +305,78 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+	int lampShaderProgram = gen_shader("shaders/lamp.frag.txt", "shaders/lamp.vs.txt");
 
 	int ourShader = gen_shader("shaders/model_loading.fs.txt", "shaders/model_loading.vs.txt");
 	Model MainHouse("house/aatish3.obj");
 	Model box("cube/cube.obj");
 	Model SecondHouse("cottage/cottage_FREE.obj");
+	
+	float vertices[] = {
+		// positions        
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
 
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+	};
+
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+
+	unsigned int lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+
+	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(1.4f,4.5f,-18.5f),
+		glm::vec3(53.0f,20.0f,-40.0f)
+	};
 	//Frame buffer
 	unsigned int fbo;
 	glGenFramebuffers(1, &fbo);
@@ -332,7 +398,7 @@ int main()
 		// input
 		// -----
 		processInput(window);
-
+		std::cout << cameraPos[0] << "   " << cameraPos[1] << "  " << cameraPos[2] << std::endl;
 		// render
 		// ------
 		glClearColor(0.4f, 0.2f, 0.8f, 1.0f);
@@ -343,10 +409,22 @@ int main()
 
 		glUniform3fv(glGetUniformLocation(ourShader, "viewPos"), 1, &cameraPos[0]);
 
-		glUniform3f(glGetUniformLocation(ourShader, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
-		glUniform3f(glGetUniformLocation(ourShader, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
-		glUniform3f(glGetUniformLocation(ourShader, "dirLight.diffuse"), 0.4f, 0.4f, 0.4f);
-		glUniform3f(glGetUniformLocation(ourShader, "dirLight.specular"), 0.5f, 0.5f, 0.5f);
+		glUniform3fv(glGetUniformLocation(ourShader, "pointLights[0].position"),1,&pointLightPositions[0][0]);
+		glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].diffuse"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].specular"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].ambient"), 0.2f, 0.2f, 0.2f);
+		glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].constant"), 0.009f);
+		glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].linear"), 0.09f);
+		glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].quadratic"), 0.000000002f);
+
+		glUniform3fv(glGetUniformLocation(ourShader, "pointLights[1].position"), 1, &pointLightPositions[1][0]);
+		glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].diffuse"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].specular"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].ambient"), 0.2f, 0.2f, 0.2f);
+		glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].constant"), 0.009f);
+		glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].linear"), 0.09f);
+		glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].quadratic"), 0.000000002f);
+
 
 		glUniform3fv(glGetUniformLocation(ourShader, "spotLight.position"), 1, &cameraPos[0]);
 		glUniform3fv(glGetUniformLocation(ourShader, "spotLight.direction"), 1, &cameraFront[0]);
@@ -394,6 +472,24 @@ int main()
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			
 			SecondHouse.Draw(ourShader);
+		}
+
+		glUseProgram(lampShaderProgram);
+		projectionLoc = glGetUniformLocation(lampShaderProgram, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		viewLoc = glGetUniformLocation(lampShaderProgram, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glBindVertexArray(lightVAO);
+		for(int i=0;i<2;i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, pointLightPositions[i]);
+			model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+			int modelLoc = glGetUniformLocation(lampShaderProgram, "model");
+
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+
 		}
 		
 		//}
