@@ -340,6 +340,25 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(ourShader);
+
+		glUniform3fv(glGetUniformLocation(ourShader, "viewPos"), 1, &cameraPos[0]);
+
+		glUniform3f(glGetUniformLocation(ourShader, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
+		glUniform3f(glGetUniformLocation(ourShader, "dirLight.ambient"), 0.05f, 0.05f, 0.05f);
+		glUniform3f(glGetUniformLocation(ourShader, "dirLight.diffuse"), 0.4f, 0.4f, 0.4f);
+		glUniform3f(glGetUniformLocation(ourShader, "dirLight.specular"), 0.5f, 0.5f, 0.5f);
+
+		glUniform3fv(glGetUniformLocation(ourShader, "spotLight.position"), 1, &cameraPos[0]);
+		glUniform3fv(glGetUniformLocation(ourShader, "spotLight.direction"), 1, &cameraFront[0]);
+		glUniform3f(glGetUniformLocation(ourShader, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
+		glUniform3f(glGetUniformLocation(ourShader, "spotLight.diffuse"), 1.0f, 1.0f, 1.0f);
+		glUniform3f(glGetUniformLocation(ourShader, "spotLight.specular"), 1.0f, 1.0f, 1.0f);
+		glUniform1f(glGetUniformLocation(ourShader, "spotLight.constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(ourShader, "spotLight.linear"), 0.09);
+		glUniform1f(glGetUniformLocation(ourShader, "spotLight.quadratic"), 0.032);
+		glUniform1f(glGetUniformLocation(ourShader, "spotLight.cutOff"), glm::cos(glm::radians(12.5f)));
+		glUniform1f(glGetUniformLocation(ourShader, "spotLight.outerCutOff"), glm::cos(glm::radians(15.0f)));
+
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
 		float aspect_ratio = (float)w / (float)h;
