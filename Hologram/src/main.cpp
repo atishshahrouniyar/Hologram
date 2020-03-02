@@ -305,6 +305,9 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+	int simple_shader = gen_shader("shaders/simple.frag.txt", "shaders/simple.vs.txt");
+
 	int lampShaderProgram = gen_shader("shaders/lamp.frag.txt", "shaders/lamp.vs.txt");
 
 	int ourShader = gen_shader("shaders/model_loading.fs.txt", "shaders/model_loading.vs.txt");
@@ -387,6 +390,8 @@ int main()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	bool effective_lighting = false;
+
 	uint64_t counter = glfwGetTimerValue();
 		// render loop
 	// -----------
@@ -401,87 +406,90 @@ int main()
 		std::cout << cameraPos[0] << "   " << cameraPos[1] << "  " << cameraPos[2] << std::endl;
 		// render
 		// ------
-		glClearColor(0.4f, 0.2f, 0.8f, 1.0f);
-		
+		glClearColor((float)135 / 255, (float)206 / 255, (float)235 / 255, 1.0f);
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(ourShader);
-
-		glUniform3fv(glGetUniformLocation(ourShader, "viewPos"), 1, &cameraPos[0]);
-
-		glUniform3fv(glGetUniformLocation(ourShader, "pointLights[0].position"),1,&pointLightPositions[0][0]);
-		glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].diffuse"), 1.0f, 1.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].specular"), 1.0f, 1.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].ambient"), 0.2f, 0.2f, 0.2f);
-		glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].constant"), 0.009f);
-		glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].linear"), 0.09f);
-		glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].quadratic"), 0.000000002f);
-
-		glUniform3fv(glGetUniformLocation(ourShader, "pointLights[1].position"), 1, &pointLightPositions[1][0]);
-		glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].diffuse"), 1.0f, 1.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].specular"), 1.0f, 1.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].ambient"), 0.2f, 0.2f, 0.2f);
-		glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].constant"), 0.009f);
-		glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].linear"), 0.09f);
-		glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].quadratic"), 0.000000002f);
-
-
-		glUniform3fv(glGetUniformLocation(ourShader, "spotLight.position"), 1, &cameraPos[0]);
-		glUniform3fv(glGetUniformLocation(ourShader, "spotLight.direction"), 1, &cameraFront[0]);
-		glUniform3f(glGetUniformLocation(ourShader, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
-		glUniform3f(glGetUniformLocation(ourShader, "spotLight.diffuse"), 1.0f, 1.0f, 1.0f);
-		glUniform3f(glGetUniformLocation(ourShader, "spotLight.specular"), 1.0f, 1.0f, 1.0f);
-		glUniform1f(glGetUniformLocation(ourShader, "spotLight.constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(ourShader, "spotLight.linear"), 0.09);
-		glUniform1f(glGetUniformLocation(ourShader, "spotLight.quadratic"), 0.032);
-		glUniform1f(glGetUniformLocation(ourShader, "spotLight.cutOff"), glm::cos(glm::radians(12.5f)));
-		glUniform1f(glGetUniformLocation(ourShader, "spotLight.outerCutOff"), glm::cos(glm::radians(15.0f)));
-
-		int w, h;
-		glfwGetWindowSize(window, &w, &h);
-		float aspect_ratio = (float)w / (float)h;
-		glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f);
-		int projectionLoc = glGetUniformLocation(ourShader, "projection");
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 		
-		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		int viewLoc = glGetUniformLocation(ourShader, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		if (effective_lighting)
+		{
+			glUseProgram(ourShader);
 
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
-			model = glm::scale(model, glm::vec3(200, 1, 200)); // a smaller cube
-			int modelLoc = glGetUniformLocation(ourShader, "model");
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			box.Draw(ourShader);
-		}
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(0.0f, 0.55f, 0.0f));
-			model = glm::scale(model, glm::vec3(0.06f)); // a smaller cube
-			int modelLoc = glGetUniformLocation(ourShader, "model");
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			MainHouse.Draw(ourShader);
-		}
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(10.0f, 0.55f, -9.5f));
-			model = glm::scale(model, glm::vec3(1.5f)); // a smaller cube
-			int modelLoc = glGetUniformLocation(ourShader, "model");
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			
-			SecondHouse.Draw(ourShader);
-		}
+			glUniform3fv(glGetUniformLocation(ourShader, "viewPos"), 1, &cameraPos[0]);
 
-		glUseProgram(lampShaderProgram);
-		projectionLoc = glGetUniformLocation(lampShaderProgram, "projection");
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		viewLoc = glGetUniformLocation(lampShaderProgram, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glBindVertexArray(lightVAO);
-		for(int i=0;i<2;i++)
-		{
+			glUniform3fv(glGetUniformLocation(ourShader, "pointLights[0].position"), 1, &pointLightPositions[0][0]);
+			glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].diffuse"), 1.0f, 1.0f, 1.0f);
+			glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].specular"), 1.0f, 1.0f, 1.0f);
+			glUniform3f(glGetUniformLocation(ourShader, "pointLights[0].ambient"), 0.2f, 0.2f, 0.2f);
+			glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].constant"), 0.009f);
+			glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].linear"), 0.09f);
+			glUniform1f(glGetUniformLocation(ourShader, "pointLights[0].quadratic"), 0.000000002f);
+
+			glUniform3fv(glGetUniformLocation(ourShader, "pointLights[1].position"), 1, &pointLightPositions[1][0]);
+			glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].diffuse"), 1.0f, 1.0f, 1.0f);
+			glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].specular"), 1.0f, 1.0f, 1.0f);
+			glUniform3f(glGetUniformLocation(ourShader, "pointLights[1].ambient"), 0.2f, 0.2f, 0.2f);
+			glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].constant"), 0.009f);
+			glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].linear"), 0.09f);
+			glUniform1f(glGetUniformLocation(ourShader, "pointLights[1].quadratic"), 0.000000002f);
+
+
+			glUniform3fv(glGetUniformLocation(ourShader, "spotLight.position"), 1, &cameraPos[0]);
+			glUniform3fv(glGetUniformLocation(ourShader, "spotLight.direction"), 1, &cameraFront[0]);
+			glUniform3f(glGetUniformLocation(ourShader, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
+			glUniform3f(glGetUniformLocation(ourShader, "spotLight.diffuse"), 1.0f, 1.0f, 1.0f);
+			glUniform3f(glGetUniformLocation(ourShader, "spotLight.specular"), 1.0f, 1.0f, 1.0f);
+			glUniform1f(glGetUniformLocation(ourShader, "spotLight.constant"), 1.0f);
+			glUniform1f(glGetUniformLocation(ourShader, "spotLight.linear"), 0.09);
+			glUniform1f(glGetUniformLocation(ourShader, "spotLight.quadratic"), 0.032);
+			glUniform1f(glGetUniformLocation(ourShader, "spotLight.cutOff"), glm::cos(glm::radians(12.5f)));
+			glUniform1f(glGetUniformLocation(ourShader, "spotLight.outerCutOff"), glm::cos(glm::radians(15.0f)));
+		
+				int w, h;
+				glfwGetWindowSize(window, &w, &h);
+				float aspect_ratio = (float)w / (float)h;
+				glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f);
+				int projectionLoc = glGetUniformLocation(ourShader, "projection");
+				glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+				glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+				int viewLoc = glGetUniformLocation(ourShader, "view");
+				glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+				{
+					glm::mat4 model = glm::mat4(1.0f);
+					model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
+					model = glm::scale(model, glm::vec3(200, 1, 200)); // a smaller cube
+					int modelLoc = glGetUniformLocation(ourShader, "model");
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+					box.Draw(ourShader);
+				}
+				{
+					glm::mat4 model = glm::mat4(1.0f);
+					model = glm::translate(model, glm::vec3(0.0f, 0.55f, 0.0f));
+					model = glm::scale(model, glm::vec3(0.06f)); // a smaller cube
+					int modelLoc = glGetUniformLocation(ourShader, "model");
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+					MainHouse.Draw(ourShader);
+				}
+				{
+					glm::mat4 model = glm::mat4(1.0f);
+					model = glm::translate(model, glm::vec3(10.0f, 0.55f, -9.5f));
+					model = glm::scale(model, glm::vec3(1.5f)); // a smaller cube
+					int modelLoc = glGetUniformLocation(ourShader, "model");
+					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+					SecondHouse.Draw(ourShader);
+				}
+		
+			glUseProgram(lampShaderProgram);
+			projectionLoc = glGetUniformLocation(lampShaderProgram, "projection");
+			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+			viewLoc = glGetUniformLocation(lampShaderProgram, "view");
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			glBindVertexArray(lightVAO);
+			for (int i = 0; i < 2; i++)
+			{
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, pointLightPositions[i]);
 			model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
@@ -490,13 +498,60 @@ int main()
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 
+			}
 		}
-		
+		else
+		{
+			glUseProgram(simple_shader);
+			int w, h;
+			glfwGetWindowSize(window, &w, &h);
+			float aspect_ratio = (float)w / (float)h;
+			glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f);
+			int projectionLoc = glGetUniformLocation(simple_shader, "projection");
+			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+			glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+			int viewLoc = glGetUniformLocation(simple_shader, "view");
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+			{
+				glm::mat4 model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
+				model = glm::scale(model, glm::vec3(200, 1, 200)); // a smaller cube
+				int modelLoc = glGetUniformLocation(simple_shader, "model");
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+				box.Draw(simple_shader);
+			}
+			{
+				glm::mat4 model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(0.0f, 0.55f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.06f)); // a smaller cube
+				int modelLoc = glGetUniformLocation(simple_shader, "model");
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+				MainHouse.Draw(simple_shader);
+			}
+			{
+				glm::mat4 model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(10.0f, 0.55f, -9.5f));
+				model = glm::scale(model, glm::vec3(1.5f)); // a smaller cube
+				int modelLoc = glGetUniformLocation(simple_shader, "model");
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+				SecondHouse.Draw(simple_shader);
+			}
+		}
 		//}
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+		if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+			effective_lighting = true;
+		if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+			effective_lighting = false;
+		
+		if (cameraPos[1] < 0.55f)
+			cameraPos[1] = 0.55f;
 
 		auto prev_counter = counter;
 		counter = glfwGetTimerValue();
