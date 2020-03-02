@@ -320,6 +320,8 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	uint64_t counter = glfwGetTimerValue();
 		// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -380,12 +382,19 @@ int main()
 		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		auto prev_counter = counter;
+		counter = glfwGetTimerValue();
+		auto counts = counter - prev_counter;
+
+		float dt = ((1000000.0f * (float)counts) / (float)glfwGetTimerFrequency()) / 1000000.0f;
+		printf("Time: %.3f ms, FPS: %d\n", dt * 1000, (int)(1/ dt));
 	}
 
 	glDeleteFramebuffers(1, &fbo);
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
-	glfwTerminate();
+	//glfwTerminate();
 	return 0;
 }
 
