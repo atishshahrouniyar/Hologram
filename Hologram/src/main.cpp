@@ -40,6 +40,36 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}
+
 struct Vertex {
 	glm::vec3 Position;
 	glm::vec3 Normal;
@@ -306,6 +336,8 @@ int main()
 		return -1;
 	}
 
+	int skybox_shader = gen_shader("shaders/skybox.frag.txt", "shaders/skybox.vs.txt");
+
 	int simple_shader = gen_shader("shaders/simple.frag.txt", "shaders/simple.vs.txt");
 
 	int lampShaderProgram = gen_shader("shaders/lamp.frag.txt", "shaders/lamp.vs.txt");
@@ -360,6 +392,51 @@ int main()
 		-0.5f,  0.5f, -0.5f,
 	};
 
+	float skybox_vertices[] = {
+		// positions          
+		-1000.0f,  1000.0f, -1000.0f,
+		-1000.0f, -1000.0f, -1000.0f,
+		 1000.0f, -1000.0f, -1000.0f,
+		 1000.0f, -1000.0f, -1000.0f,
+		 1000.0f,  1000.0f, -1000.0f,
+		-1000.0f,  1000.0f, -1000.0f,
+
+		-1000.0f, -1000.0f,  1000.0f,
+		-1000.0f, -1000.0f, -1000.0f,
+		-1000.0f,  1000.0f, -1000.0f,
+		-1000.0f,  1000.0f, -1000.0f,
+		-1000.0f,  1000.0f,  1000.0f,
+		-1000.0f, -1000.0f,  1000.0f,
+
+		 1000.0f, -1000.0f, -1000.0f,
+		 1000.0f, -1000.0f,  1000.0f,
+		 1000.0f,  1000.0f,  1000.0f,
+		 1000.0f,  1000.0f,  1000.0f,
+		 1000.0f,  1000.0f, -1000.0f,
+		 1000.0f, -1000.0f, -1000.0f,
+
+		-1000.0f, -1000.0f,  1000.0f,
+		-1000.0f,  1000.0f,  1000.0f,
+		 1000.0f,  1000.0f,  1000.0f,
+		 1000.0f,  1000.0f,  1000.0f,
+		 1000.0f, -1000.0f,  1000.0f,
+		-1000.0f, -1000.0f,  1000.0f,
+
+		-1000.0f,  1000.0f, -1000.0f,
+		 1000.0f,  1000.0f, -1000.0f,
+		 1000.0f,  1000.0f,  1000.0f,
+		 1000.0f,  1000.0f,  1000.0f,
+		-1000.0f,  1000.0f,  1000.0f,
+		-1000.0f,  1000.0f, -1000.0f,
+
+		-1000.0f, -1000.0f, -1000.0f,
+		-1000.0f, -1000.0f,  1000.0f,
+		 1000.0f, -1000.0f, -1000.0f,
+		 1000.0f, -1000.0f, -1000.0f,
+		-1000.0f, -1000.0f,  1000.0f,
+		 1000.0f, -1000.0f,  1000.0f
+	};
+
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -376,6 +453,26 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+	unsigned int skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), &skybox_vertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	std::vector<std::string> faces
+	{
+		("skybox/right.jpg"),
+		("skybox/left.jpg"),
+		("skybox/top.jpg"),
+		("skybox/bottom.jpg"),
+		("skybox/front.jpg"),
+		("skybox/back.jpg")
+	};
+	unsigned int cubemapTexture = loadCubemap(faces);
+
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(1.4f,4.5f,-18.5f),
 		glm::vec3(53.0f,20.0f,-40.0f)
@@ -389,6 +486,10 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+	glUseProgram(skybox_shader);
+	glUniform1i(glGetUniformLocation(skybox_shader, "skybox"), 0);
 
 	bool effective_lighting = false;
 
@@ -406,13 +507,16 @@ int main()
 		std::cout << cameraPos[0] << "   " << cameraPos[1] << "  " << cameraPos[2] << std::endl;
 		// render
 		// ------
-		glClearColor((float)135 / 255, (float)206 / 255, (float)235 / 255, 1.0f);
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
 
 		
 		if (effective_lighting)
 		{
+			glUniform3f(glGetUniformLocation(skybox_shader, "light"), 0.1f, 0.1f, 0.1f);
+
+			glClearColor(0, 0, 0, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glUseProgram(ourShader);
 
 			glUniform3fv(glGetUniformLocation(ourShader, "viewPos"), 1, &cameraPos[0]);
@@ -448,7 +552,7 @@ int main()
 				int w, h;
 				glfwGetWindowSize(window, &w, &h);
 				float aspect_ratio = (float)w / (float)h;
-				glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f);
+				glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
 				int projectionLoc = glGetUniformLocation(ourShader, "projection");
 				glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -459,7 +563,7 @@ int main()
 				{
 					glm::mat4 model = glm::mat4(1.0f);
 					model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
-					model = glm::scale(model, glm::vec3(200, 1, 200)); // a smaller cube
+					model = glm::scale(model, glm::vec3(10000, 1, 10000)); // a smaller cube
 					int modelLoc = glGetUniformLocation(ourShader, "model");
 					glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 					box.Draw(ourShader);
@@ -502,11 +606,16 @@ int main()
 		}
 		else
 		{
+			glUniform3f(glGetUniformLocation(skybox_shader, "light"), 1.0f, 1.0f, 1.0f);
+
+			glClearColor((float)135 / 255, (float)206 / 255, (float)235 / 255, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 			glUseProgram(simple_shader);
 			int w, h;
 			glfwGetWindowSize(window, &w, &h);
 			float aspect_ratio = (float)w / (float)h;
-			glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 100.0f);
+			glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
 			int projectionLoc = glGetUniformLocation(simple_shader, "projection");
 			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -517,7 +626,7 @@ int main()
 			{
 				glm::mat4 model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(0.0f, 0, 0.0f));
-				model = glm::scale(model, glm::vec3(200, 1, 200)); // a smaller cube
+				model = glm::scale(model, glm::vec3(1000, 1, 1000)); // a smaller cube
 				int modelLoc = glGetUniformLocation(simple_shader, "model");
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 				box.Draw(simple_shader);
@@ -540,6 +649,32 @@ int main()
 				SecondHouse.Draw(simple_shader);
 			}
 		}
+
+		glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+		glUseProgram(skybox_shader);
+		
+		{
+			glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+			int viewLoc = glGetUniformLocation(skybox_shader, "view");
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+			int w, h;
+			glfwGetWindowSize(window, &w, &h);
+			float aspect_ratio = (float)w / (float)h;
+			glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
+			int projectionLoc = glGetUniformLocation(skybox_shader, "projection");
+			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+		}
+		// skybox cube
+
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS);
+
+
 		//}
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -607,3 +742,4 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
 
 	return textureID;
 }
+
