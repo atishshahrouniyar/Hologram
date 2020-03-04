@@ -8,5 +8,4 @@ uniform vec3 light;
 void main()
 {    
     FragColor = vec4( light * vec3(texture(skybox, TexCoords)),1.0f);
-	//FragColor = texture(skybox, TexCoords);
 }

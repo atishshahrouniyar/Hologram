@@ -33,12 +33,9 @@ float lastFrame = 0.0f; // Time of last frame
 
 
 //camera practise
-glm::vec3 cameraPos = glm::vec3(10.0f, 5.0f, 10.0f);
+glm::vec3 cameraPos = glm::vec3(50.0f, 3.0f, -15.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-// lighting
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 unsigned int loadCubemap(std::vector<std::string> faces)
 {
@@ -307,10 +304,6 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
-#endif
-
 	// glfw window creation
 	// --------------------
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
@@ -345,8 +338,9 @@ int main()
 	int ourShader = gen_shader("shaders/model_loading.fs.txt", "shaders/model_loading.vs.txt");
 	Model MainHouse("house/aatish3.obj");
 	Model box("cube/cube.obj");
-	Model SecondHouse("cottage/cottage_FREE.obj");
+	Model SecondHouse("cottage/Cottage.obj");
 	
+	//For light bulb
 	float vertices[] = {
 		// positions        
 		-0.5f, -0.5f, -0.5f,
@@ -475,7 +469,7 @@ int main()
 
 	glm::vec3 pointLightPositions[] = {
 		glm::vec3(1.4f,4.5f,-18.5f),
-		glm::vec3(53.0f,20.0f,-40.0f)
+		glm::vec3(52.5f,21.8f,-41.5f)
 	};
 	//Frame buffer
 	unsigned int fbo;
@@ -508,7 +502,12 @@ int main()
 		// render
 		// ------
 
-		
+		int w, h;
+		glfwGetWindowSize(window, &w, &h);
+		float aspect_ratio = (float)w / (float)h;
+		glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
+
+		glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
 		
 		if (effective_lighting)
@@ -549,14 +548,11 @@ int main()
 			glUniform1f(glGetUniformLocation(ourShader, "spotLight.cutOff"), glm::cos(glm::radians(12.5f)));
 			glUniform1f(glGetUniformLocation(ourShader, "spotLight.outerCutOff"), glm::cos(glm::radians(15.0f)));
 		
-				int w, h;
-				glfwGetWindowSize(window, &w, &h);
-				float aspect_ratio = (float)w / (float)h;
-				glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
+				
 				int projectionLoc = glGetUniformLocation(ourShader, "projection");
 				glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-				glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+				
 				int viewLoc = glGetUniformLocation(ourShader, "view");
 				glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
@@ -612,14 +608,10 @@ int main()
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			glUseProgram(simple_shader);
-			int w, h;
-			glfwGetWindowSize(window, &w, &h);
-			float aspect_ratio = (float)w / (float)h;
-			glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
+			
 			int projectionLoc = glGetUniformLocation(simple_shader, "projection");
 			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-			glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 			int viewLoc = glGetUniformLocation(simple_shader, "view");
 			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
@@ -654,13 +646,9 @@ int main()
 		glUseProgram(skybox_shader);
 		
 		{
-			glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 			int viewLoc = glGetUniformLocation(skybox_shader, "view");
 			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-			int w, h;
-			glfwGetWindowSize(window, &w, &h);
-			float aspect_ratio = (float)w / (float)h;
-			glm::mat4 projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.1f, 1000.0f);
+			
 			int projectionLoc = glGetUniformLocation(skybox_shader, "projection");
 			glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 

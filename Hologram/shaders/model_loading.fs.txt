@@ -45,15 +45,15 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 void main()
 {    
      //properties
-   vec3 norm = normalize(Normal);
-    vec3 viewDir = normalize(viewPos - FragPos);
+   	vec3 norm = normalize(Normal);
+   	vec3 viewDir = normalize(viewPos - FragPos);
 	//For ambient
 	vec3 result = pointLights[0].ambient * vec3(texture(texture_diffuse1,TexCoords));
 	for(int i=0;i<2;i++)
     		result += CalcPointLight(pointLights[i], norm,FragPos, viewDir);
 	result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
     
-   FragColor = vec4(result, 1.0);
+   	FragColor = vec4(result, 1.0);
 
 }
 
